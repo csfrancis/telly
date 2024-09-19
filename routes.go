@@ -24,8 +24,10 @@ import (
 	"github.com/tellytv/telly/internal/xmltv"
 )
 
+var currentLineup *lineup
+
 func serve(lineup *lineup) {
-	currentLineup := lineup
+	currentLineup = lineup
 	scanning := false
 
 	discoveryData := getDiscoveryData()
