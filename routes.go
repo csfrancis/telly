@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,6 +25,9 @@ import (
 )
 
 func serve(lineup *lineup) {
+	currentLineup := lineup
+	scanning := false
+
 	discoveryData := getDiscoveryData()
 
 	log.Debugln("creating device xml")
@@ -55,7 +59,7 @@ func serve(lineup *lineup) {
 			Source:         "Cable",
 			SourceList:     []string{"Cable"},
 		}
-		if lineup.Scanning {
+		if scanning {
 			payload = LineupStatus{
 				ScanInProgress: convertibleBoolean(true),
 				// Gotta fake out Plex.
@@ -69,10 +73,20 @@ func serve(lineup *lineup) {
 	router.POST("/lineup.post", func(c *gin.Context) {
 		scanAction := c.Query("scan")
 		if scanAction == "start" {
-			if refreshErr := lineup.Scan(); refreshErr != nil {
-				c.AbortWithError(http.StatusInternalServerError, refreshErr)
+			if scanning {
+				c.AbortWithError(http.StatusInternalServerError, errors.New("scanning in progress"))
+				return
 			}
-			c.AbortWithStatus(http.StatusOK)
+
+			updatedLineup := newLineup()
+			scanning = true
+			if refreshErr := updatedLineup.Scan(); refreshErr != nil {
+				c.AbortWithError(http.StatusInternalServerError, refreshErr)
+			} else {
+				currentLineup = updatedLineup
+				c.AbortWithStatus(http.StatusOK)
+			}
+			scanning = false
 			return
 		} else if scanAction == "abort" {
 			c.AbortWithStatus(http.StatusOK)
@@ -81,12 +95,12 @@ func serve(lineup *lineup) {
 		c.String(http.StatusBadRequest, "%s is not a valid scan command", scanAction)
 	})
 	router.GET("/device.xml", deviceXML(upnp))
-	router.GET("/lineup.json", serveLineup(lineup))
-	router.GET("/lineup.xml", serveLineup(lineup))
-	router.GET("/auto/:channelID", stream(lineup))
-	router.GET("/epg.xml", xmlTV(lineup))
+	router.GET("/lineup.json", serveLineup(currentLineup))
+	router.GET("/lineup.xml", serveLineup(currentLineup))
+	router.GET("/auto/:channelID", stream(currentLineup))
+	router.GET("/epg.xml", xmlTV(currentLineup))
 	router.GET("/debug.json", func(c *gin.Context) {
-		c.JSON(http.StatusOK, lineup)
+		c.JSON(http.StatusOK, currentLineup)
 	})
 
 	if viper.GetBool("discovery.ssdp") {
