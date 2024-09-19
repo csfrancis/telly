@@ -166,6 +166,10 @@ github.com/tellytv/go.schedulesdirect v0.0.0-20180828235349-49735fc3ed77 h1:eZWU
 github.com/tellytv/go.schedulesdirect v0.0.0-20180828235349-49735fc3ed77/go.mod h1:pBZcxidsU285nwpDZ3NQIONgAyOo4wiUoOutTMu7KU4=
 github.com/ugorji/go v0.0.0-20170215201144-c88ee250d022 h1:wIYK3i9zY6ZBcWw4GFvoPVwtb45iEm8KyOVmDhSLvsE=
 github.com/ugorji/go v0.0.0-20170215201144-c88ee250d022/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
+github.com/ugorji/go v1.2.12 h1:oRySHlrVC5izTtkkuUmr0leYV9ixxb2eXLnyUiNctis=
+github.com/ugorji/go v1.2.12/go.mod h1:ww1EoEU2l94lsly/faL8Xxa015DInNutT/JBXRcn6G4=
+github.com/ugorji/go/codec v1.2.12 h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=
+github.com/ugorji/go/codec v1.2.12/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 golang.org/x/crypto v0.0.0-20180808211826-de0752318171 h1:vYogbvSFj2YXcjQxFHu/rASSOt9sLytpCaSkiwQ135I=
 golang.org/x/crypto v0.0.0-20180808211826-de0752318171/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

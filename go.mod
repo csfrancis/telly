@@ -42,7 +42,7 @@ require (
 	github.com/spf13/viper v1.1.0
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tellytv/go.schedulesdirect v0.0.0-20180828235349-49735fc3ed77
-	github.com/ugorji/go v0.0.0-20170215201144-c88ee250d022
+	github.com/ugorji/go v1.2.12
 	golang.org/x/crypto v0.0.0-20190506204251-e1dfcc566284
 	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c
 	golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862
