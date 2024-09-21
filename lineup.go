@@ -246,7 +246,7 @@ func (l *lineup) prepareProvider(provider providers.Provider) (*m3u.Playlist, ma
 		log.WithError(closeM3UErr).Panicln("error when closing m3u reader")
 	}
 
-	channelMap, programmeMap, epgErr := l.prepareEPG(provider, cacheFiles)
+	channelMap, programmeMap, epgErr := l.prepareEPG(provider, cacheFiles, rawPlaylist)
 	if epgErr != nil {
 		log.WithError(epgErr).Errorln("error when parsing EPG")
 		return nil, nil, nil, epgErr
@@ -317,13 +317,13 @@ func (l *lineup) FilterTrack(provider providers.Provider, track m3u.Track) bool 
 
 }
 
-func (l *lineup) prepareEPG(provider providers.Provider, cacheFiles bool) (map[string]xmltv.Channel, map[string][]xmltv.Programme, error) {
+func (l *lineup) prepareEPG(provider providers.Provider, cacheFiles bool, playlist *m3u.Playlist) (map[string]xmltv.Channel, map[string][]xmltv.Programme, error) {
 	var epg *xmltv.TV
 	epgChannelMap := make(map[string]xmltv.Channel)
 	epgProgrammeMap := make(map[string][]xmltv.Programme)
 	if provider.EPGURL() != "" {
 		var epgErr error
-		epg, epgErr = getXMLTV(provider.EPGURL(), cacheFiles)
+		epg, epgErr = getXMLTVFast(provider.EPGURL(), cacheFiles, playlist)
 		if epgErr != nil {
 			return epgChannelMap, epgProgrammeMap, epgErr
 		}
@@ -484,6 +484,79 @@ func getM3U(path string, cacheFiles bool) (io.ReadCloser, error) {
 	}
 
 	return file, nil
+}
+
+func getXMLTVFast(path string, cacheFiles bool, playlist *m3u.Playlist) (*xmltv.TV, error) {
+	safePath := safeStringsRegex.ReplaceAllStringFunc(path, stringSafer)
+	log.Infof("Loading XMLTV from %s", safePath)
+	file, _, err := getFile(path, cacheFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	channels := make(map[string]bool)
+	for _, track := range playlist.Tracks {
+		id := track.Tags["tvg-id"]
+		if len(id) == 0 {
+			continue
+		}
+		channels[id] = true
+	}
+
+	decoder := xml.NewDecoder(file)
+	tvSetup := new(xmltv.TV)
+
+	for {
+		// Decode the next XML token
+		tok, err := decoder.Token()
+		if err != nil {
+			break // Exit on EOF or error
+		}
+
+		// Process the start element
+		switch se := tok.(type) {
+		case xml.StartElement:
+			switch se.Name.Local {
+			case "tv":
+				for _, attr := range se.Attr {
+					switch attr.Name.Local {
+					case "date":
+						tvSetup.Date = attr.Value
+					case "source-info-url":
+						tvSetup.SourceInfoURL = attr.Value
+					case "source-info-name":
+						tvSetup.SourceInfoName = attr.Value
+					case "source-data-url":
+						tvSetup.SourceDataURL = attr.Value
+					case "generator-info-name":
+						tvSetup.GeneratorInfoName = attr.Value
+					case "generator-info-url":
+						tvSetup.GeneratorInfoURL = attr.Value
+					}
+				}
+			case "programme":
+				var programme xmltv.Programme
+				err := decoder.DecodeElement(&programme, &se)
+				if err != nil {
+					return nil, err
+				}
+				if channels[programme.Channel] {
+					tvSetup.Programmes = append(tvSetup.Programmes, programme)
+				}
+			case "channel":
+				var channel xmltv.Channel
+				err := decoder.DecodeElement(&channel, &se)
+				if err != nil {
+					return nil, err
+				}
+				if channels[channel.ID] {
+					tvSetup.Channels = append(tvSetup.Channels, channel)
+				}
+			}
+		}
+	}
+
+	return tvSetup, nil
 }
 
 func getXMLTV(path string, cacheFiles bool) (*xmltv.TV, error) {
